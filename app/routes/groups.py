@@ -63,6 +63,22 @@ def create_group(
     return RedirectResponse(f"/groups/{group.id}", status_code=302)
 
 
+@router.get("/groups/join/{invite_code}")
+def join_group_link(invite_code: str, request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse(f"/login?next=/groups/join/{invite_code}", status_code=302)
+    group = db.query(Group).filter_by(invite_code=invite_code.strip()).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Invalid invite link")
+    existing = db.query(GroupMembership).filter_by(group_id=group.id, user_id=user.id).first()
+    if not existing:
+        membership = GroupMembership(group_id=group.id, user_id=user.id, role=GroupRole.member)
+        db.add(membership)
+        db.commit()
+    return RedirectResponse(f"/groups/{group.id}", status_code=302)
+
+
 @router.post("/groups/join")
 def join_group(
     request: Request,
@@ -72,7 +88,6 @@ def join_group(
     user = require_user(request, db)
     group = db.query(Group).filter_by(invite_code=invite_code.strip()).first()
     if not group:
-        # Re-render groups page with error
         memberships = db.query(GroupMembership).filter_by(user_id=user.id).all()
         groups = [m.group for m in memberships]
         return templates.TemplateResponse(

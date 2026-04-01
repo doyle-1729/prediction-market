@@ -57,10 +57,10 @@ def register(
 
 
 @router.get("/login", response_class=HTMLResponse)
-def login_page(request: Request, db: Session = Depends(get_db)):
+def login_page(request: Request, next: str = "/", db: Session = Depends(get_db)):
     if get_current_user(request, db):
-        return RedirectResponse("/", status_code=302)
-    return templates.TemplateResponse("login.html", {"request": request})
+        return RedirectResponse(next or "/", status_code=302)
+    return templates.TemplateResponse("login.html", {"request": request, "next": next})
 
 
 @router.post("/login")
@@ -68,15 +68,16 @@ def login(
     request: Request,
     username: str = Form(...),
     password: str = Form(...),
+    next: str = Form("/"),
     db: Session = Depends(get_db),
 ):
     username = username.strip().lower()
     user = db.query(User).filter_by(username=username).first()
     if not user or not verify_password(password, user.password_hash):
         return templates.TemplateResponse(
-            "login.html", {"request": request, "error": "Invalid username or password."}
+            "login.html", {"request": request, "next": next, "error": "Invalid username or password."}
         )
-    response = RedirectResponse("/", status_code=302)
+    response = RedirectResponse(next or "/", status_code=302)
     create_session(response, user.id)
     return response
 

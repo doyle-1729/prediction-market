@@ -11,12 +11,27 @@
   <a href="/groups/{{ group.id }}/markets/create" class="btn btn-primary">+ Create Market</a>
 </div>
 
-<!-- Invite code -->
+<!-- Invite link -->
 <div class="invite-box">
-  <span class="invite-label">Invite code</span>
-  <code class="invite-code">{{ group.invite_code }}</code>
-  <span class="invite-hint">Share this with friends so they can join</span>
+  <span class="invite-label">Invite link</span>
+  <div class="invite-url-row">
+    <input type="text" class="invite-url-input" id="invite-url"
+           value="{{ request.base_url }}groups/join/{{ group.invite_code }}" readonly>
+    <button class="invite-copy-btn" onclick="copyInvite()" id="copy-btn">Copy</button>
+  </div>
+  <span class="invite-hint">Anyone with this link can join the group</span>
 </div>
+<script>
+function copyInvite() {
+  const input = document.getElementById('invite-url');
+  navigator.clipboard.writeText(input.value).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = 'Copied!';
+    btn.classList.add('invite-copy-btn--copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('invite-copy-btn--copied'); }, 2000);
+  });
+}
+</script>
 
 <div class="group-body">
 

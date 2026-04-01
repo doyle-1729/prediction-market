@@ -15,7 +15,10 @@
         <a href="/groups">Groups</a>
         <a href="/portfolio">Portfolio</a>
         <span class="balance">${{ "%.2f"|format(user.balance|float) }}</span>
-        <span class="username">{{ user.username }}</span>
+        <span class="nav-user">
+          <span class="nav-user__avatar">{{ user.username[0] | upper }}</span>
+          <span class="nav-user__name">{{ user.username }}</span>
+        </span>
         <form method="post" action="/logout" style="display:inline">
           <button type="submit" class="btn-link">Logout</button>
         </form>
