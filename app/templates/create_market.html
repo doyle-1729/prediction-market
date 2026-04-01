@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Create Market{% endblock %}
+{% block content %}
+<div class="form-box">
+  <h2>Create Market{% if group %} in {{ group.name }}{% endif %}</h2>
+  {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+  <form method="post" action="/groups/{{ group.id }}/markets/create">
+    <label>Question</label>
+    <input type="text" name="title" required autofocus placeholder="Will X happen by Y date?">
+    <label>Description <span class="optional">(optional)</span></label>
+    <textarea name="description" rows="3" placeholder="Additional context or resolution criteria..."></textarea>
+    <label>Closes At <span class="optional">(optional)</span></label>
+    <input type="datetime-local" name="closes_at">
+    <button type="submit" class="btn btn-primary">Create Market</button>
+    <a href="/groups/{{ group.id }}" class="btn btn-ghost">Cancel</a>
+  </form>
+</div>
+{% endblock %}

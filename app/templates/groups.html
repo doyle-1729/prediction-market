@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}My Groups{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>My Groups</h1>
+  <div style="display:flex;gap:10px;">
+    <a href="/groups/create" class="btn btn-primary">+ Create Group</a>
+  </div>
+</div>
+
+{% if join_error %}<div class="alert alert-error">{{ join_error }}</div>{% endif %}
+
+<!-- Join group -->
+<div class="join-box">
+  <form method="post" action="/groups/join" class="join-form">
+    <input type="text" name="invite_code" placeholder="Enter invite code to join a group" required>
+    <button type="submit" class="btn btn-ghost">Join</button>
+  </form>
+</div>
+
+{% if groups %}
+<div class="group-list">
+  {% for group in groups %}
+  <a href="/groups/{{ group.id }}" class="group-card">
+    <div class="group-card__name">{{ group.name }}</div>
+    <div class="group-card__meta">
+      {% if group.description %}<span>{{ group.description }}</span>{% endif %}
+      <span class="group-card__count">{{ group.memberships | length }} member{{ 's' if group.memberships | length != 1 }}</span>
+      <span class="group-card__count">{{ group.markets | length }} market{{ 's' if group.markets | length != 1 }}</span>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+  <p>You're not in any groups yet.</p>
+  <p style="margin-top:8px;font-size:13px;">Create a group and share the invite code with friends, or enter an invite code above.</p>
+</div>
+{% endif %}
+{% endblock %}

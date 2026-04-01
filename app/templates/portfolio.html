@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Portfolio{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>Portfolio</h1>
+  <span class="portfolio-balance">${{ "%.2f"|format(user.balance|float) }}</span>
+</div>
+
+<!-- Positions -->
+<section class="port-section">
+  <h2>Positions</h2>
+  {% if positions %}
+  <table class="port-table">
+    <thead>
+      <tr><th>Market</th><th>YES shares</th><th>NO shares</th></tr>
+    </thead>
+    <tbody>
+      {% for pos in positions %}
+      <tr>
+        <td><a href="/markets/{{ pos.market_id }}">{{ pos.market.title }}</a></td>
+        <td class="{% if pos.yes_shares > 0 %}td-yes{% elif pos.yes_shares < 0 %}td-neg{% endif %}">
+          {{ pos.yes_shares }}
+        </td>
+        <td class="{% if pos.no_shares > 0 %}td-no{% elif pos.no_shares < 0 %}td-neg{% endif %}">
+          {{ pos.no_shares }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">No open positions.</p>
+  {% endif %}
+</section>
+
+<!-- Open orders -->
+<section class="port-section">
+  <div class="section-header-row">
+    <h2>Open Orders</h2>
+    {% if open_orders %}
+    <form method="post" action="/portfolio/cancel-all"
+          onsubmit="return confirm('Cancel all {{ open_orders|length }} open order{{ 's' if open_orders|length != 1 }}?')">
+      <button type="submit" class="btn btn-sm btn-danger">Cancel All ({{ open_orders|length }})</button>
+    </form>
+    {% endif %}
+  </div>
+  {% if open_orders %}
+  <table class="port-table">
+    <thead>
+      <tr><th>Market</th><th>Outcome</th><th>Side</th><th>Price</th><th>Qty</th><th>Filled</th><th>Status</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for o in open_orders %}
+      <tr>
+        <td><a href="/markets/{{ o.market_id }}">{{ o.market.title }}</a></td>
+        <td><span class="badge badge--{{ o.outcome.value }}">{{ o.outcome.value | upper }}</span></td>
+        <td class="{{ o.side.value }}">{{ o.side.value | upper }}</td>
+        <td class="td-price">{{ o.price }}¢</td>
+        <td>{{ o.quantity }}</td>
+        <td>{{ o.filled_quantity }}</td>
+        <td><span class="status-dot status--{{ o.status.value }}"></span>{{ o.status.value }}</td>
+        <td>
+          <form method="post" action="/markets/{{ o.market_id }}/cancel/{{ o.id }}">
+            <button type="submit" class="btn btn-sm btn-danger">Cancel</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">No open orders.</p>
+  {% endif %}
+</section>
+
+<!-- Trade history -->
+<section class="port-section">
+  <h2>Trade History</h2>
+  {% if recent_trades %}
+  <table class="port-table">
+    <thead>
+      <tr><th>Market</th><th>Outcome</th><th>Price</th><th>Qty</th><th>Time</th></tr>
+    </thead>
+    <tbody>
+      {% for t in recent_trades %}
+      <tr>
+        <td><a href="/markets/{{ t.market_id }}">{{ t.market.title }}</a></td>
+        <td><span class="badge badge--{{ t.outcome.value }}">{{ t.outcome.value | upper }}</span></td>
+        <td class="td-price">{{ t.price }}¢</td>
+        <td>{{ t.quantity }}</td>
+        <td class="td-time">{{ t.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">No trades yet.</p>
+  {% endif %}
+</section>
+
+{% endblock %}

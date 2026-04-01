@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ group.name }}{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <a href="/groups" class="back-link">← My Groups</a>
+    <h1>{{ group.name }}</h1>
+    {% if group.description %}<p class="market-desc">{{ group.description }}</p>{% endif %}
+  </div>
+  <a href="/groups/{{ group.id }}/markets/create" class="btn btn-primary">+ Create Market</a>
+</div>
+
+<!-- Invite code -->
+<div class="invite-box">
+  <span class="invite-label">Invite code</span>
+  <code class="invite-code">{{ group.invite_code }}</code>
+  <span class="invite-hint">Share this with friends so they can join</span>
+</div>
+
+<div class="group-body">
+
+  <!-- Markets -->
+  <section class="group-section">
+    <h2>Markets</h2>
+    {% if markets %}
+    <div class="market-list">
+      {% for market in markets %}
+      <a href="/markets/{{ market.id }}" class="market-card {% if market.status.value != 'open' %}market-card--closed{% endif %}">
+        <div class="market-card__title">{{ market.title }}</div>
+        <div class="market-card__meta">
+          <span class="badge badge--{{ market.status.value }}">{{ market.status.value }}</span>
+          {% if market.status.value == 'resolved' %}
+            <span class="resolved-outcome">→ {{ market.resolved_outcome.value | upper }}</span>
+          {% endif %}
+          <span class="market-card__creator">by {{ market.created_by.username }}</span>
+          {% if market.closes_at %}
+            <span class="market-card__close">closes {{ market.closes_at.strftime('%b %d, %Y') }}</span>
+          {% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:32px 0;">
+      <p>No markets yet. <a href="/groups/{{ group.id }}/markets/create">Create one!</a></p>
+    </div>
+    {% endif %}
+  </section>
+
+  <!-- Leaderboard -->
+  <section class="group-section">
+    <h2>Leaderboard</h2>
+    <table class="leaderboard">
+      <thead><tr><th>#</th><th>Player</th><th>Balance</th></tr></thead>
+      <tbody>
+        {% for u in leaderboard %}
+        <tr class="{% if u.id == user.id %}highlight{% endif %}">
+          <td>{{ loop.index }}</td>
+          <td>
+            {{ u.username }}
+            {% if u.id == user.id %}<span class="you">(you)</span>{% endif %}
+          </td>
+          <td class="balance">${{ "%.2f"|format(u.balance|float) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+</div>
+{% endblock %}

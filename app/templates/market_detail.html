@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% block title %}{{ market.title }}{% endblock %}
+{% block content %}
+
+<!-- Market header -->
+<div class="mkt-header">
+  <div class="mkt-header__left">
+    {% if market.group_id %}
+    <a href="/groups/{{ market.group_id }}" class="back-link">← {{ market.group.name }}</a>
+    {% else %}
+    <a href="/groups" class="back-link">← Groups</a>
+    {% endif %}
+    <h1 class="mkt-title">{{ market.title }}</h1>
+    {% if market.description %}<p class="mkt-desc">{{ market.description }}</p>{% endif %}
+    <div class="mkt-meta">
+      <span class="badge badge--{{ market.status.value }}">{{ market.status.value }}</span>
+      {% if market.status.value == 'resolved' %}
+        <strong class="resolved-outcome">→ {{ market.resolved_outcome.value | upper }}</strong>
+      {% endif %}
+      <span class="mkt-meta__item">by {{ market.created_by.username }}</span>
+      {% if market.closes_at %}
+        <span class="mkt-meta__item">closes {{ market.closes_at.strftime('%b %d %Y %H:%M') }}</span>
+      {% endif %}
+    </div>
+  </div>
+  {% if market.status.value == 'open' and (market.created_by_id == user.id or user.is_admin) %}
+  <form method="post" action="/markets/{{ market.id }}/resolve" class="resolve-form">
+    <select name="outcome" class="resolve-select">
+      <option value="yes">YES</option>
+      <option value="no">NO</option>
+    </select>
+    <button type="submit" class="btn btn-danger btn-sm"
+            onclick="return confirm('Resolve this market? This cannot be undone.')">Resolve</button>
+  </form>
+  {% endif %}
+</div>
+
+<!-- Trading layout -->
+<div class="trading-layout{% if market.status.value != 'open' %} trading-layout--wide{% endif %}">
+
+  <!-- LEFT: Live order book + trades (HTMX polled every 5s) -->
+  <div class="live-col">
+    <div id="live-market-data"
+         hx-get="/markets/{{ market.id }}/orderbook-partial"
+         hx-trigger="every 5s"
+         hx-swap="innerHTML">
+      {% include "orderbook_partial.html" %}
+    </div>
+  </div>
+
+  <!-- RIGHT: Order form (only when market is open) -->
+  {% if market.status.value == 'open' %}
+  <aside class="order-col">
+    <div class="order-card">
+      <div class="order-card__header">Place Order</div>
+
+      <!-- User's open orders in this market -->
+      {% if user_open_orders %}
+      <div class="my-orders-mini">
+        <div class="my-orders-mini__header">
+          <span>My Open Orders</span>
+          <form method="post" action="/markets/{{ market.id }}/cancel-all" style="display:inline">
+            <button type="submit" class="cancel-all-btn">Cancel All</button>
+          </form>
+        </div>
+        {% for o in user_open_orders %}
+        <div class="my-order-row">
+          <span class="my-order-side {{ o.side.value }}">{{ o.side.value | upper }}</span>
+          <span class="my-order-outcome {{ o.outcome.value }}">{{ o.outcome.value | upper }}</span>
+          <span class="my-order-price">{{ o.price }}¢</span>
+          <span class="my-order-qty">{{ o.quantity - o.filled_quantity }} left</span>
+          <form method="post" action="/markets/{{ market.id }}/cancel/{{ o.id }}" style="display:inline">
+            <button type="submit" class="cancel-x-btn" title="Cancel order">✕</button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <form method="post" action="/markets/{{ market.id }}/order" class="order-form" id="order-form">
+        <!-- Outcome toggle -->
+        <div class="form-field">
+          <label class="field-label">Outcome</label>
+          <div class="toggle-group toggle-group--outcome">
+            <input type="radio" name="outcome" id="o-yes" value="yes" checked>
+            <label for="o-yes" class="tgl-yes">YES</label>
+            <input type="radio" name="outcome" id="o-no" value="no">
+            <label for="o-no" class="tgl-no">NO</label>
+          </div>
+        </div>
+
+        <!-- Side toggle -->
+        <div class="form-field">
+          <label class="field-label">Side</label>
+          <div class="toggle-group toggle-group--side">
+            <input type="radio" name="side" id="s-buy" value="buy" checked>
+            <label for="s-buy" class="tgl-buy">BUY</label>
+            <input type="radio" name="side" id="s-sell" value="sell">
+            <label for="s-sell" class="tgl-sell">SELL</label>
+          </div>
+        </div>
+
+        <!-- Order type toggle -->
+        <div class="form-field">
+          <label class="field-label">Type</label>
+          <div class="toggle-group toggle-group--type">
+            <input type="radio" name="order_type" id="t-limit" value="limit" checked>
+            <label for="t-limit" class="tgl-limit">LIMIT</label>
+            <input type="radio" name="order_type" id="t-market" value="market">
+            <label for="t-market" class="tgl-market">MARKET</label>
+          </div>
+        </div>
+
+        <!-- Price (hidden for market orders) -->
+        <div class="form-field" id="price-field">
+          <div class="field-label-row">
+            <label class="field-label" for="price-input">Price (¢)</label>
+            <div class="quick-prices">
+              {% if yes_bids %}
+              <button type="button" class="qp-btn qp-bid"
+                      onclick="setPrice({{ yes_bids[0].price }})">bid {{ yes_bids[0].price }}¢</button>
+              {% endif %}
+              <button type="button" class="qp-btn qp-mid"
+                      onclick="setPrice(50)">50¢</button>
+              {% if unified_asks %}
+              <button type="button" class="qp-btn qp-ask"
+                      onclick="setPrice({{ unified_asks[0].display_price }})">ask {{ unified_asks[0].display_price }}¢</button>
+              {% endif %}
+            </div>
+          </div>
+          <input type="number" id="price-input" name="price" min="1" max="99"
+                 placeholder="50" class="trade-input">
+        </div>
+
+        <!-- Quantity -->
+        <div class="form-field">
+          <label class="field-label" for="qty-input">Quantity</label>
+          <input type="number" id="qty-input" name="quantity" min="1"
+                 required placeholder="10" class="trade-input">
+        </div>
+
+        <!-- Order summary -->
+        <div class="order-summary">
+          <div class="summary-row">
+            <span class="summary-label">Estimated cost</span>
+            <span class="summary-val" id="cost-display">—</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Balance</span>
+            <span class="summary-val balance">${{ "%.2f"|format(user.balance|float) }}</span>
+          </div>
+          {% if user_position %}
+          <div class="summary-row">
+            <span class="summary-label">Your position</span>
+            <span class="summary-val">
+              {% if user_position.yes_shares %}
+                <span class="yes">{{ user_position.yes_shares }} YES</span>
+              {% endif %}
+              {% if user_position.no_shares %}
+                <span class="no">{{ user_position.no_shares }} NO</span>
+              {% endif %}
+              {% if not user_position.yes_shares and not user_position.no_shares %}—{% endif %}
+            </span>
+          </div>
+          {% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-buy btn-lg" id="submit-btn">BUY YES</button>
+      </form>
+    </div>
+  </aside>
+  {% endif %}
+
+</div>
+
+<script>
+function setPrice(p) {
+  document.getElementById('price-input').value = p;
+  updateForm();
+}
+
+function updateForm() {
+  const outcome = document.querySelector('input[name="outcome"]:checked')?.value || 'yes';
+  const side = document.querySelector('input[name="side"]:checked')?.value || 'buy';
+  const orderType = document.querySelector('input[name="order_type"]:checked')?.value || 'limit';
+  const price = parseFloat(document.getElementById('price-input')?.value) || 0;
+  const qty = parseInt(document.getElementById('qty-input')?.value) || 0;
+
+  // Show/hide price field based on order type
+  const priceField = document.getElementById('price-field');
+  const priceInput = document.getElementById('price-input');
+  if (priceField) {
+    const isMarket = orderType === 'market';
+    priceField.style.display = isMarket ? 'none' : '';
+    if (priceInput) priceInput.required = !isMarket;
+  }
+
+  const btn = document.getElementById('submit-btn');
+  if (btn) {
+    const typeLabel = orderType === 'market' ? ' MKT' : '';
+    btn.textContent = `${side === 'buy' ? 'BUY' : 'SELL'} ${outcome.toUpperCase()}${typeLabel}`;
+    btn.className = `btn btn-lg ${side === 'buy' ? 'btn-buy' : 'btn-sell'}`;
+  }
+
+  const costEl = document.getElementById('cost-display');
+  if (costEl) {
+    if (orderType === 'market') {
+      costEl.textContent = qty > 0 ? `${qty} share${qty !== 1 ? 's' : ''} @ market` : '—';
+    } else if (side === 'buy' && price > 0 && qty > 0) {
+      const cost = (price * qty / 100).toFixed(2);
+      costEl.textContent = `$${cost}`;
+    } else if (side === 'sell' && qty > 0) {
+      costEl.textContent = `${qty} share${qty !== 1 ? 's' : ''}`;
+    } else {
+      costEl.textContent = '—';
+    }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('input[name="outcome"], input[name="side"], input[name="order_type"]').forEach(el => {
+    el.addEventListener('change', updateForm);
+  });
+  ['price-input', 'qty-input'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', updateForm);
+  });
+  updateForm();
+});
+</script>
+
+{% endblock %}

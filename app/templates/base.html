@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Prediction Market{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <a class="brand" href="/groups">PredictX</a>
+    <div class="nav-links">
+      {% if user %}
+        <a href="/groups">Groups</a>
+        <a href="/portfolio">Portfolio</a>
+        <span class="balance">${{ "%.2f"|format(user.balance|float) }}</span>
+        <span class="username">{{ user.username }}</span>
+        <form method="post" action="/logout" style="display:inline">
+          <button type="submit" class="btn-link">Logout</button>
+        </form>
+      {% else %}
+        <a href="/login">Login</a>
+        <a href="/register">Register</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

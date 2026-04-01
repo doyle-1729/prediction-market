@@ -1,0 +1,91 @@
+<!-- Order book -->
+<div class="ob-panel">
+  <div class="ob-header-row">
+    <span>Price</span>
+    <span>Qty</span>
+    <span>Orders</span>
+    <span>Type</span>
+  </div>
+
+  <!-- Asks — highest first so best ask sits nearest the spread -->
+  <div class="ob-asks">
+    {% for e in unified_asks | reverse %}
+    {% set pct = [(e.remaining / max_depth * 100) | round | int, 100] | min %}
+    <div class="ob-row ob-row--ask">
+      <span class="ob-depth-bar" style="width:{{ pct }}%"></span>
+      <span class="ob-price ob-price--ask">{{ e.display_price }}¢</span>
+      <span class="ob-qty">{{ e.remaining }}</span>
+      <span class="ob-count">{{ e.order_count }}</span>
+      <span class="ob-type">
+        {% if e.type == 'no_buy' %}
+          <span class="ob-tag ob-tag--comp" title="NO buyer at {{ 100 - e.display_price }}¢ — will pair-mint with you">NO@{{ 100 - e.display_price }}¢</span>
+        {% elif e.type == 'mixed' %}
+          <span class="ob-tag ob-tag--mixed">mixed</span>
+        {% else %}
+          <span class="ob-tag ob-tag--sell">sell</span>
+        {% endif %}
+      </span>
+    </div>
+    {% else %}
+    <div class="ob-empty">No asks</div>
+    {% endfor %}
+  </div>
+
+  <!-- Spread / last price indicator -->
+  {% set best_bid = yes_bids[0].price if yes_bids else none %}
+  {% set best_ask = unified_asks[0].display_price if unified_asks else none %}
+  {% if best_bid is not none and best_ask is not none %}
+    {% set spread = best_ask - best_bid %}
+    <div class="ob-spread">
+      <span>{{ best_bid }}¢ bid</span>
+      <span class="ob-spread__val">{{ spread }}¢ spread</span>
+      <span>{{ best_ask }}¢ ask</span>
+    </div>
+  {% elif recent_trades %}
+    <div class="ob-spread">
+      <span class="ob-spread__last">Last trade: {{ recent_trades[0].price }}¢</span>
+    </div>
+  {% else %}
+    <div class="ob-spread ob-spread--empty">No orders yet — place the first one!</div>
+  {% endif %}
+
+  <!-- Bids -->
+  <div class="ob-bids">
+    {% for o in yes_bids %}
+    {% set pct = [(o.remaining / max_depth * 100) | round | int, 100] | min %}
+    <div class="ob-row ob-row--bid">
+      <span class="ob-depth-bar" style="width:{{ pct }}%"></span>
+      <span class="ob-price ob-price--bid">{{ o.price }}¢</span>
+      <span class="ob-qty">{{ o.remaining }}</span>
+      <span class="ob-count">{{ o.order_count }}</span>
+      <span class="ob-type"><span class="ob-tag ob-tag--buy">buy</span></span>
+    </div>
+    {% else %}
+    <div class="ob-empty">No bids</div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Recent trades -->
+<div class="trades-panel">
+  <div class="trades-panel__title">Recent Trades</div>
+  {% if recent_trades %}
+  <table class="trades-table">
+    <thead>
+      <tr><th>Time</th><th>Outcome</th><th>Price</th><th>Qty</th></tr>
+    </thead>
+    <tbody>
+      {% for t in recent_trades %}
+      <tr>
+        <td class="td-time">{{ t.created_at.strftime('%H:%M:%S') }}</td>
+        <td><span class="badge badge--{{ t.outcome.value }}">{{ t.outcome.value | upper }}</span></td>
+        <td class="td-price {{ t.outcome.value }}">{{ t.price }}¢</td>
+        <td class="td-qty">{{ t.quantity }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="ob-empty">No trades yet.</p>
+  {% endif %}
+</div>

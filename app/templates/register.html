@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+{% block content %}
+<div class="auth-box">
+  <h2>Create Account</h2>
+  {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+  <form method="post" action="/register">
+    <label>Username</label>
+    <input type="text" name="username" required autofocus minlength="3">
+    <label>Password</label>
+    <input type="password" name="password" required minlength="6">
+    <button type="submit" class="btn btn-primary">Create Account</button>
+  </form>
+  <p class="auth-link">Already have an account? <a href="/login">Login</a></p>
+</div>
+{% endblock %}

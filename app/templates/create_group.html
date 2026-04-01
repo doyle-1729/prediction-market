@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Create Group{% endblock %}
+{% block content %}
+<div class="form-box">
+  <h2>Create Group</h2>
+  {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+  <form method="post" action="/groups/create">
+    <label>Group Name</label>
+    <input type="text" name="name" required autofocus placeholder="e.g. Friday Night Forecasters">
+    <label>Description <span class="optional">(optional)</span></label>
+    <textarea name="description" rows="2" placeholder="What is this group about?"></textarea>
+    <button type="submit" class="btn btn-primary">Create Group</button>
+    <a href="/groups" class="btn btn-ghost">Cancel</a>
+  </form>
+</div>
+{% endblock %}

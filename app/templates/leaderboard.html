@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Leaderboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Global Leaderboard</h1>
+</div>
+<table class="leaderboard">
+  <thead><tr><th>#</th><th>Player</th><th>Balance</th></tr></thead>
+  <tbody>
+    {% for u in users %}
+    <tr class="{% if u.id == user.id %}highlight{% endif %}">
+      <td>{{ loop.index }}</td>
+      <td>
+        {{ u.username }}
+        {% if u.id == user.id %}<span class="you">(you)</span>{% endif %}
+      </td>
+      <td class="balance">${{ "%.2f"|format(u.balance|float) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
